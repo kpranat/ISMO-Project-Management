@@ -14,13 +14,17 @@ import {
   ExternalLink,
   Filter,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
 
 export const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,10 +34,12 @@ export const Projects = () => {
   const loadProjects = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await projectService.getProjects();
       setProjects(data);
     } catch (err) {
       console.error('Failed to load projects', err);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -103,6 +109,22 @@ export const Projects = () => {
           <span>New Project</span>
         </button>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => loadProjects()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100/50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
 
       {/* Search & Filter Toolbar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">

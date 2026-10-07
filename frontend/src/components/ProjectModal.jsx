@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
 
 export const ProjectModal = ({
   isOpen,
@@ -63,8 +64,7 @@ export const ProjectModal = ({
       });
       onClose();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save project';
-      setErrors({ form: msg });
+      setErrors({ form: getErrorMessage(err) });
     } finally {
       setSubmitting(false);
     }

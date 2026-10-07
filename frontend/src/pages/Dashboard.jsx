@@ -15,7 +15,10 @@ import {
   ListTodo,
   Calendar,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
 
 export const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -28,6 +31,7 @@ export const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Modals state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -36,6 +40,7 @@ export const Dashboard = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const [statsData, projectsData, tasksData] = await Promise.all([
         dashboardService.getDashboardStats(),
         projectService.getProjects(),
@@ -46,6 +51,7 @@ export const Dashboard = () => {
       setTasks(tasksData);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -116,6 +122,22 @@ export const Dashboard = () => {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => loadData()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100/50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
 
       {/* 5 Stats Cards Required by Spec */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
