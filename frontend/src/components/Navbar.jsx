@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Menu, LogOut, User as UserIcon, CheckCircle2 } from 'lucide-react';
+import { RoleBadge } from './Badges.jsx';
 
 export const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
@@ -29,13 +30,16 @@ export const Navbar = ({ onToggleSidebar }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-2 pr-3.5 sm:flex">
+        <div className="hidden items-center gap-2.5 rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-2 pr-3.5 sm:flex">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-medium text-xs">
             {user?.name ? user.name[0].toUpperCase() : <UserIcon className="h-4 w-4" />}
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-xs font-medium text-slate-800 leading-none">{user?.name || 'User'}</span>
-            <span className="text-[10px] text-slate-500 leading-none mt-0.5">{user?.email}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-800 leading-none">{user?.name || 'User'}</span>
+              <RoleBadge role={user?.role} />
+            </div>
+            <span className="text-[10px] text-slate-500 leading-none mt-1">{user?.email}</span>
           </div>
         </div>
 
@@ -51,4 +55,3 @@ export const Navbar = ({ onToggleSidebar }) => {
     </header>
   );
 };
-

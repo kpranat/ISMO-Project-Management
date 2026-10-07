@@ -2,7 +2,27 @@ import prisma from '../db.js';
 
 export const getDashboardStats = async (req, res, next) => {
   try {
+    const roleName = req.user.role?.name;
     const userId = req.user.id;
+
+    let projectWhere = {};
+    let taskWhere = {};
+
+    if (roleName === 'ADMIN') {
+      projectWhere = {};
+      taskWhere = {};
+    } else if (roleName === 'PROJECT_LEADER') {
+      projectWhere = {
+        OR: [{ userId }, { assignedToId: userId }],
+      };
+      taskWhere = {
+        OR: [{ project: { userId } }, { assignedToId: userId }],
+      };
+    } else {
+      // MEMBER: strictly assigned to them
+      projectWhere = { assignedToId: userId };
+      taskWhere = { assignedToId: userId };
+    }
 
     const [
       totalProjects,
@@ -11,33 +31,20 @@ export const getDashboardStats = async (req, res, next) => {
       pendingTasks,
       completedTasks,
     ] = await Promise.all([
-      // Total projects owned by user
       prisma.project.count({
-        where: { userId },
+        where: projectWhere,
       }),
-      // Projects in progress owned by user
       prisma.project.count({
-        where: { userId, status: 'In Progress' },
+        where: { ...projectWhere, status: 'In Progress' },
       }),
-      // Total tasks in user's projects
       prisma.task.count({
-        where: {
-          project: { userId },
-        },
+        where: taskWhere,
       }),
-      // Pending tasks
       prisma.task.count({
-        where: {
-          project: { userId },
-          status: 'Pending',
-        },
+        where: { ...taskWhere, status: 'Pending' },
       }),
-      // Completed tasks
       prisma.task.count({
-        where: {
-          project: { userId },
-          status: 'Completed',
-        },
+        where: { ...taskWhere, status: 'Completed' },
       }),
     ]);
 
@@ -52,4 +59,3 @@ export const getDashboardStats = async (req, res, next) => {
     next(error);
   }
 };
-

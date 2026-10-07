@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard.jsx';
 import { Projects } from './pages/Projects.jsx';
 import { ProjectDetails } from './pages/ProjectDetails.jsx';
 import { Tasks } from './pages/Tasks.jsx';
+import { TeamRoles } from './pages/TeamRoles.jsx';
 
 export const App = () => {
   return (
@@ -27,6 +28,7 @@ export const App = () => {
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetails />} />
               <Route path="/tasks" element={<Tasks />} />
+              <Route path="/team" element={<TeamRoles />} />
             </Route>
           </Route>
 
@@ -39,4 +41,3 @@ export const App = () => {
 };
 
 export default App;
-

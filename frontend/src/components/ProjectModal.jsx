@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { getErrorMessage } from '../services/api.js';
+import { X, User } from 'lucide-react';
+import { getErrorMessage, userService } from '../services/api.js';
 
 export const ProjectModal = ({
   isOpen,
@@ -13,8 +13,16 @@ export const ProjectModal = ({
   const [status, setStatus] = useState('Not Started');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
+  const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      userService.getUsers().then(setUsers).catch(console.error);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -23,6 +31,7 @@ export const ProjectModal = ({
       setStatus(initialData.status);
       setStartDate(initialData.startDate ? initialData.startDate.substring(0, 10) : '');
       setEndDate(initialData.endDate ? initialData.endDate.substring(0, 10) : '');
+      setAssignedToId(initialData.assignedToId || '');
     } else {
       setName('');
       setDescription('');
@@ -30,6 +39,7 @@ export const ProjectModal = ({
       const today = new Date().toISOString().split('T')[0];
       setStartDate(today);
       setEndDate('');
+      setAssignedToId('');
     }
     setErrors({});
   }, [initialData, isOpen]);
@@ -61,6 +71,7 @@ export const ProjectModal = ({
         status,
         startDate,
         endDate,
+        assignedToId: assignedToId || null,
       });
       onClose();
     } catch (err) {
@@ -86,14 +97,14 @@ export const ProjectModal = ({
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {errors.form && (
-          <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
             {errors.form}
           </div>
         )}
@@ -104,17 +115,19 @@ export const ProjectModal = ({
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
               Project Name *
             </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Mobile Banking App"
-              className={`mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm transition outline-none focus:ring-2 ${
-                errors.name
-                  ? 'border-rose-300 focus:ring-rose-200'
-                  : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-100'
-              }`}
-            />
+            <div className="relative mt-1.5">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Website Overhaul Q4"
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm transition outline-none focus:ring-2 ${
+                  errors.name
+                    ? 'border-rose-300 focus:ring-rose-200'
+                    : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-100'
+                }`}
+              />
+            </div>
             {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name}</p>}
           </div>
 
@@ -139,6 +152,30 @@ export const ProjectModal = ({
             {errors.description && (
               <p className="mt-1 text-xs text-rose-600">{errors.description}</p>
             )}
+          </div>
+
+          {/* Assign To User */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+              Assign To (Team Member / Lead)
+            </label>
+            <div className="relative mt-1.5">
+              <select
+                value={assignedToId}
+                onChange={(e) => setAssignedToId(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="">Unassigned (Open Project)</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role?.name || 'MEMBER'}) - {u.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Assigned user will have scoped access to this project.
+            </p>
           </div>
 
           {/* Status */}
@@ -221,4 +258,3 @@ export const ProjectModal = ({
     </div>
   );
 };
-

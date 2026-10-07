@@ -34,17 +34,30 @@ export const register = async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Default role is always MEMBER
+    const memberRole = await prisma.role.findUnique({
+      where: { name: 'MEMBER' },
+    });
+
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
+        roleId: memberRole?.id || null,
       },
       select: {
         id: true,
         name: true,
         email: true,
         createdAt: true,
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
       },
     });
 
@@ -66,6 +79,15 @@ export const login = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -86,6 +108,7 @@ export const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -102,4 +125,3 @@ export const getMe = async (req, res) => {
     user: req.user,
   });
 };
-

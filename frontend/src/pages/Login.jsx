@@ -24,26 +24,9 @@ export const Login = () => {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      // Only navigates forward if login actually succeeds!
       navigate('/dashboard');
     } catch (err) {
       setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await login('intern@ismo.dev', 'password123');
-      navigate('/dashboard');
-    } catch (err) {
-      setError(
-        getErrorMessage(err) +
-          ' (Note: Run "npm run seed" in backend to seed the demo account).'
-      );
     } finally {
       setLoading(false);
     }
@@ -115,7 +98,7 @@ export const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-100 transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -130,24 +113,6 @@ export const Login = () => {
             )}
           </button>
         </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-400 font-medium">Or quick demo</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={loading}
-          className="w-full rounded-xl border border-indigo-200 bg-indigo-50/60 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition active:scale-[0.99] disabled:opacity-50"
-        >
-          {loading ? 'Connecting...' : 'Instant Demo Sign In (1-Click)'}
-        </button>
 
         <p className="text-center text-xs text-slate-500">
           Don't have an account?{' '}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { dashboardService, projectService, taskService } from '../services/api.js';
+import { dashboardService, projectService, taskService, updateService } from '../services/api.js';
 import { StatCard } from '../components/StatCard.jsx';
-import { StatusBadge, PriorityBadge } from '../components/Badges.jsx';
+import { StatusBadge, PriorityBadge, RoleBadge, AssigneeAvatar } from '../components/Badges.jsx';
 import { ProjectModal } from '../components/ProjectModal.jsx';
 import { TaskModal } from '../components/TaskModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import {
   FolderKanban,
   CheckCircle2,
@@ -17,10 +18,15 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  Bell,
+  Sparkles,
 } from 'lucide-react';
 import { getErrorMessage } from '../services/api.js';
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+  const canCreate = ['ADMIN', 'PROJECT_LEADER'].includes(user?.role?.name);
+
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalTasks: 0,
@@ -30,6 +36,7 @@ export const Dashboard = () => {
   });
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -41,14 +48,16 @@ export const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const [statsData, projectsData, tasksData] = await Promise.all([
+      const [statsData, projectsData, tasksData, updatesData] = await Promise.all([
         dashboardService.getDashboardStats(),
         projectService.getProjects(),
         taskService.getTasks(),
+        updateService.getUpdates().catch(() => []),
       ]);
       setStats(statsData);
       setProjects(projectsData);
       setTasks(tasksData);
+      setUpdates(updatesData);
     } catch (err) {
       console.error('Failed to load dashboard data', err);
       setError(getErrorMessage(err));
@@ -72,9 +81,14 @@ export const Dashboard = () => {
   };
 
   const handleToggleTask = async (task) => {
-    const nextStatus = task.status === 'Completed' ? 'In Progress' : 'Completed';
-    await taskService.updateTask(task.id, { status: nextStatus });
-    await loadData();
+    try {
+      const nextStatus = task.status === 'Completed' ? 'In Progress' : 'Completed';
+      await taskService.updateTask(task.id, { status: nextStatus });
+      await loadData();
+    } catch (err) {
+      console.error('Failed to toggle task:', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   const upcomingTasks = tasks
@@ -97,30 +111,37 @@ export const Dashboard = () => {
       {/* Header section with quick actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Dashboard Overview
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Dashboard Overview
+            </h1>
+            <RoleBadge role={user?.role} />
+          </div>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Monitor all ongoing projects, task progress, and real-time completion metrics.
+            {canCreate
+              ? `Welcome back, ${user?.name || 'User'}. Monitor active projects, assignments, and deliveries.`
+              : `Welcome back, ${user?.name || 'User'}. Viewing tasks and projects assigned directly to you.`}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsTaskModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Task</span>
-          </button>
-          <button
-            onClick={() => setIsProjectModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
-          >
-            <Plus className="h-4 w-4" />
-            <span>New Project</span>
-          </button>
-        </div>
+        {canCreate && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsTaskModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 active:scale-95 transition"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Task</span>
+            </button>
+            <button
+              onClick={() => setIsProjectModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
+            >
+              <Plus className="h-4 w-4" />
+              <span>New Project</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -146,7 +167,7 @@ export const Dashboard = () => {
           value={stats.totalProjects}
           icon={FolderKanban}
           colorScheme="indigo"
-          description="Managed active & finished"
+          description={canCreate ? 'Managed projects' : 'Assigned to you'}
         />
         <StatCard
           title="Projects In Progress"
@@ -160,14 +181,14 @@ export const Dashboard = () => {
           value={stats.totalTasks}
           icon={ListTodo}
           colorScheme="purple"
-          description="Across all projects"
+          description={canCreate ? 'Across projects' : 'Assigned to you'}
         />
         <StatCard
           title="Pending Tasks"
           value={stats.pendingTasks}
           icon={Clock}
           colorScheme="amber"
-          description="Awaiting action"
+          description="Awaiting completion"
         />
         <StatCard
           title="Completed Tasks"
@@ -178,12 +199,65 @@ export const Dashboard = () => {
         />
       </div>
 
+      {/* Assigned Updates & Recent Activity Feed */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <Bell className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">
+                Assigned Updates & Activity Feed
+              </h2>
+              <p className="text-xs text-slate-500">
+                Live stream of task assignments, status changes, and progress updates relevant to you.
+              </p>
+            </div>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            {updates.length} updates
+          </span>
+        </div>
+
+        <div className="mt-4 divide-y divide-slate-100 max-h-72 overflow-y-auto">
+          {updates.length === 0 ? (
+            <div className="py-8 text-center text-slate-400">
+              <Sparkles className="mx-auto h-6 w-6 text-slate-300" />
+              <p className="mt-2 text-xs">No recent updates logged yet.</p>
+            </div>
+          ) : (
+            updates.map((upd) => (
+              <div key={upd.id} className="flex items-start gap-3 py-3 first:pt-1 last:pb-1">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
+                  {upd.user?.name ? upd.user.name[0].toUpperCase() : 'A'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-800 leading-relaxed">
+                    {upd.message}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
+                    <span className="font-semibold uppercase tracking-wider text-indigo-600">
+                      {upd.entityType}
+                    </span>
+                    <span>•</span>
+                    <span>{new Date(upd.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Projects & Tasks Overview Grid */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
         {/* Projects Preview (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Active Projects</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {canCreate ? 'Active Projects' : 'Your Assigned Projects'}
+            </h2>
             <Link
               to="/projects"
               className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
@@ -197,13 +271,17 @@ export const Dashboard = () => {
               <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center bg-white">
                 <FolderKanban className="mx-auto h-8 w-8 text-slate-400" />
                 <p className="mt-2 text-sm font-medium text-slate-700">No projects yet</p>
-                <p className="mt-1 text-xs text-slate-500">Create your first project to start tracking.</p>
-                <button
-                  onClick={() => setIsProjectModalOpen(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Create Project
-                </button>
+                <p className="mt-1 text-xs text-slate-500">
+                  {canCreate ? 'Create your first project to start tracking.' : 'No projects have been assigned to you yet.'}
+                </p>
+                {canCreate && (
+                  <button
+                    onClick={() => setIsProjectModalOpen(true)}
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Create Project
+                  </button>
+                )}
               </div>
             ) : (
               recentProjects.map((project) => {
@@ -229,17 +307,18 @@ export const Dashboard = () => {
                       <StatusBadge status={project.status} />
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                      <span className="flex items-center gap-1.5">
+                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                      <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        Due {project.endDate}
-                      </span>
-                      <span className="font-medium text-slate-700">
-                        {completed}/{total} tasks ({percentage}%)
-                      </span>
+                        <span>Due {project.endDate}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-400">Assigned:</span>
+                        <AssigneeAvatar user={project.assignedTo} fallback="Open" />
+                      </div>
                     </div>
 
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div className="mt-3 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-indigo-600 transition-all duration-300"
                         style={{ width: `${percentage}%` }}
@@ -255,7 +334,9 @@ export const Dashboard = () => {
         {/* Urgent & Pending Tasks (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Upcoming Tasks</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {canCreate ? 'Upcoming Tasks' : 'Tasks Assigned to You'}
+            </h2>
             <Link
               to="/tasks"
               className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
@@ -327,4 +408,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
