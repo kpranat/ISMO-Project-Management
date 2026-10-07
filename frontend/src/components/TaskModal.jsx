@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
 
 export const TaskModal = ({
   isOpen,
@@ -69,8 +70,7 @@ export const TaskModal = ({
       });
       onClose();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save task';
-      setErrors({ form: msg });
+      setErrors({ form: getErrorMessage(err) });
     } finally {
       setSubmitting(false);
     }

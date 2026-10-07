@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { CheckCircle2, Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
+import { CheckCircle2, Lock, Mail, User, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 export const Register = () => {
   const [name, setName] = useState('');
@@ -37,9 +38,10 @@ export const Register = () => {
     setLoading(true);
     try {
       await register(name.trim(), email.trim(), password);
+      // Only navigates forward on true success!
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed.');
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -61,8 +63,9 @@ export const Register = () => {
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700">
-            {error}
+          <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+            <span className="flex-1 leading-relaxed">{error}</span>
           </div>
         )}
 
@@ -78,10 +81,11 @@ export const Register = () => {
               <input
                 type="text"
                 value={name}
+                disabled={loading}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Jane Doe"
                 required
-                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </div>
@@ -97,10 +101,11 @@ export const Register = () => {
               <input
                 type="email"
                 value={email}
+                disabled={loading}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
-                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </div>
@@ -116,10 +121,11 @@ export const Register = () => {
               <input
                 type="password"
                 value={password}
+                disabled={loading}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 6 characters"
                 required
-                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </div>
@@ -135,10 +141,11 @@ export const Register = () => {
               <input
                 type="password"
                 value={confirmPassword}
+                disabled={loading}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Repeat password"
                 required
-                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-500"
               />
             </div>
           </div>
@@ -148,8 +155,17 @@ export const Register = () => {
             disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-50"
           >
-            {loading ? 'Registering...' : 'Create Account'}
-            <ArrowRight className="h-4 w-4" />
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Registering...</span>
+              </>
+            ) : (
+              <>
+                <span>Create Account</span>
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
           </button>
         </form>
 
@@ -163,4 +179,3 @@ export const Register = () => {
     </div>
   );
 };
-

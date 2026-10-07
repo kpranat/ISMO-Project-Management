@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { projectService, taskService } from '../services/api.js';
+import { projectService, taskService, getErrorMessage } from '../services/api.js';
 import { StatusBadge, PriorityBadge } from '../components/Badges.jsx';
 import { TaskModal } from '../components/TaskModal.jsx';
 import { ProjectModal } from '../components/ProjectModal.jsx';
@@ -17,6 +17,7 @@ import {
   CheckSquare,
   AlertCircle,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 export const ProjectDetails = () => {
@@ -26,6 +27,7 @@ export const ProjectDetails = () => {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +46,7 @@ export const ProjectDetails = () => {
     if (!id) return;
     try {
       setLoading(true);
+      setError(null);
       const [projData, tasksData] = await Promise.all([
         projectService.getProject(id),
         taskService.getTasks(id),
@@ -52,6 +55,7 @@ export const ProjectDetails = () => {
       setTasks(tasksData);
     } catch (err) {
       console.error('Failed to load project details', err);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -84,16 +88,26 @@ export const ProjectDetails = () => {
   };
 
   const handleToggleTask = async (task) => {
-    const nextStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
-    await taskService.updateTask(task.id, { status: nextStatus });
-    await loadData();
+    try {
+      const nextStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
+      await taskService.updateTask(task.id, { status: nextStatus });
+      await loadData();
+    } catch (err) {
+      console.error('Failed to toggle task status', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   const handleDeleteTask = async () => {
     if (!deletingTask) return;
-    await taskService.deleteTask(deletingTask.id);
-    setDeletingTask(null);
-    await loadData();
+    try {
+      await taskService.deleteTask(deletingTask.id);
+      setDeletingTask(null);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to delete task', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   const handleUpdateProject = async (data) => {
@@ -104,14 +118,43 @@ export const ProjectDetails = () => {
 
   const handleDeleteProject = async () => {
     if (!id) return;
-    await projectService.deleteProject(id);
-    navigate('/projects');
+    try {
+      await projectService.deleteProject(id);
+      navigate('/projects');
+    } catch (err) {
+      console.error('Failed to delete project', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error && !project) {
+    return (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center">
+        <AlertCircle className="mx-auto h-10 w-10 text-rose-500" />
+        <h2 className="mt-2 text-lg font-semibold text-rose-800">Failed to Load Project</h2>
+        <p className="mt-1 text-xs text-rose-600">{error}</p>
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <button
+            onClick={() => loadData()}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-700"
+          >
+            <RefreshCw className="h-4 w-4" /> Retry
+          </button>
+          <Link
+            to="/projects"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Projects
+          </Link>
+        </div>
       </div>
     );
   }
@@ -137,6 +180,22 @@ export const ProjectDetails = () => {
 
   return (
     <div className="space-y-6 pb-12">
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => loadData()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100/50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
       {/* Back link & actions */}
       <div className="flex items-center justify-between">
         <Link

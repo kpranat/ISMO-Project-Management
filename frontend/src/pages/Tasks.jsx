@@ -14,12 +14,16 @@ import {
   Trash2,
   FolderKanban,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
+import { getErrorMessage } from '../services/api.js';
 
 export const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +39,7 @@ export const Tasks = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const [tasksData, projectsData] = await Promise.all([
         taskService.getTasks(),
         projectService.getProjects(),
@@ -43,6 +48,7 @@ export const Tasks = () => {
       setProjects(projectsData);
     } catch (err) {
       console.error('Failed to load tasks', err);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -123,6 +129,22 @@ export const Tasks = () => {
           <span>New Task</span>
         </button>
       </div>
+
+      {error && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm text-rose-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => loadData()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100/50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs lg:flex-row lg:items-center lg:justify-between">
