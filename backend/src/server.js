@@ -48,9 +48,11 @@ app.use((req, res) => {
 // Centralized Error Handling
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`[ISMO Backend] Server running on port ${PORT}`);
-  console.log(`[ISMO Backend] Health check: http://localhost:${PORT}/api/health`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[ISMO Backend] Server running on port ${PORT}`);
+    console.log(`[ISMO Backend] Health check: http://localhost:${PORT}/api/health`);
+  });
+}
 
 export default app;
