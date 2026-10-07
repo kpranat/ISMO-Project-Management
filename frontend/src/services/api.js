@@ -220,3 +220,41 @@ export const dashboardService = {
     return res.data;
   },
 };
+
+// User & Role Service
+export const userService = {
+  async getUsers() {
+    if (USE_MOCK) {
+      return mockStorage.getUsers ? mockStorage.getUsers() : [];
+    }
+    const res = await apiClient.get('/users');
+    return res.data;
+  },
+
+  async getRoles() {
+    if (USE_MOCK) {
+      return mockStorage.getRoles ? mockStorage.getRoles() : [];
+    }
+    const res = await apiClient.get('/users/roles');
+    return res.data;
+  },
+
+  async updateUserRole(userId, roleName) {
+    if (USE_MOCK) {
+      return mockStorage.updateUserRole ? mockStorage.updateUserRole(userId, roleName) : {};
+    }
+    const res = await apiClient.patch(`/users/${userId}/role`, { roleName });
+    return res.data;
+  },
+};
+
+// Activity & Updates Feed Service
+export const updateService = {
+  async getUpdates() {
+    if (USE_MOCK) {
+      return mockStorage.getUpdates ? mockStorage.getUpdates() : [];
+    }
+    const res = await apiClient.get('/updates');
+    return res.data;
+  },
+};

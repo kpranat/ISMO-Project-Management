@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { projectService, taskService, getErrorMessage } from '../services/api.js';
-import { StatusBadge, PriorityBadge } from '../components/Badges.jsx';
+import { StatusBadge, PriorityBadge, AssigneeAvatar } from '../components/Badges.jsx';
 import { TaskModal } from '../components/TaskModal.jsx';
 import { ProjectModal } from '../components/ProjectModal.jsx';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import {
   ArrowLeft,
   Calendar,
@@ -23,6 +24,7 @@ import {
 export const ProjectDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -41,6 +43,12 @@ export const ProjectDetails = () => {
 
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
+
+  const canManageProject =
+    user?.role?.name === 'ADMIN' ||
+    (user?.role?.name === 'PROJECT_LEADER' && project?.userId === user?.id);
+
+  const canCreateTask = ['ADMIN', 'PROJECT_LEADER'].includes(user?.role?.name);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -164,7 +172,7 @@ export const ProjectDetails = () => {
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
         <AlertCircle className="mx-auto h-10 w-10 text-amber-500" />
         <h2 className="mt-2 text-lg font-semibold text-slate-800">Project Not Found</h2>
-        <p className="mt-1 text-xs text-slate-500">This project may have been deleted.</p>
+        <p className="mt-1 text-xs text-slate-500">This project may have been deleted or access was revoked.</p>
         <Link
           to="/projects"
           className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white"
@@ -205,20 +213,22 @@ export const ProjectDetails = () => {
           <ArrowLeft className="h-4 w-4" /> Back to Projects
         </Link>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsProjectModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-          >
-            <Edit2 className="h-3.5 w-3.5" /> Edit Project
-          </button>
-          <button
-            onClick={() => setDeletingProject(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Delete
-          </button>
-        </div>
+        {canManageProject && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsProjectModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              <Edit2 className="h-3.5 w-3.5" /> Edit Project
+            </button>
+            <button
+              onClick={() => setDeletingProject(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Project Card Header */}
@@ -234,6 +244,17 @@ export const ProjectDetails = () => {
             <p className="text-sm text-slate-600 leading-relaxed">
               {project.description}
             </p>
+
+            <div className="flex flex-wrap items-center gap-4 pt-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-slate-400">Assigned To:</span>
+                <AssigneeAvatar user={project.assignedTo} fallback="Open Project" />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-slate-400">Project Leader:</span>
+                <AssigneeAvatar user={project.user} fallback="Unassigned" />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1 rounded-xl bg-slate-50 p-4 border border-slate-100 sm:text-right shrink-0">
@@ -274,19 +295,23 @@ export const ProjectDetails = () => {
             Project Tasks
           </h2>
           <p className="text-xs text-slate-500">
-            Manage deliverables and checklist items specifically for this project.
+            {canCreateTask
+              ? 'Manage deliverables and checklist items specifically for this project.'
+              : 'Tasks assigned to you in this project.'}
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingTask(null);
-            setIsTaskModalOpen(true);
-          }}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
-        >
-          <Plus className="h-4 w-4" /> Add Task
-        </button>
+        {canCreateTask && (
+          <button
+            onClick={() => {
+              setEditingTask(null);
+              setIsTaskModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
+          >
+            <Plus className="h-4 w-4" /> Add Task
+          </button>
+        )}
       </div>
 
       {/* Task Filters */}
@@ -303,7 +328,6 @@ export const ProjectDetails = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Status filter */}
           <div className="flex items-center gap-1 text-xs">
             <span className="text-slate-400 font-medium mr-1 hidden sm:inline">Status:</span>
             <select
@@ -318,7 +342,6 @@ export const ProjectDetails = () => {
             </select>
           </div>
 
-          {/* Priority filter */}
           <div className="flex items-center gap-1 text-xs">
             <span className="text-slate-400 font-medium mr-1 hidden sm:inline">Priority:</span>
             <select
@@ -337,27 +360,38 @@ export const ProjectDetails = () => {
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <CheckSquare className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-2 text-sm font-semibold text-slate-700">No tasks found</p>
-          <p className="mt-1 text-xs text-slate-400">
-            {tasks.length === 0
-              ? 'Get started by creating the first task for this project.'
-              : 'Try clearing your search or status/priority filters.'}
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+          <CheckSquare className="mx-auto h-12 w-12 text-slate-300" />
+          <h3 className="mt-3 text-base font-medium text-slate-900">No tasks in this project</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            {searchQuery || statusFilter !== 'All' || priorityFilter !== 'All'
+              ? 'Try adjusting your search criteria.'
+              : canCreateTask
+              ? 'Add the first task to start tracking progress.'
+              : 'You do not have any tasks assigned in this project.'}
           </p>
+          {canCreateTask && !searchQuery && statusFilter === 'All' && priorityFilter === 'All' && (
+            <button
+              onClick={() => {
+                setEditingTask(null);
+                setIsTaskModalOpen(true);
+              }}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white"
+            >
+              <Plus className="h-4 w-4" /> Add Task
+            </button>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {filteredTasks.map((task) => (
             <div
               key={task.id}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border p-4 bg-white shadow-xs transition ${
-                task.status === 'Completed'
-                  ? 'border-slate-200 bg-slate-50/50 opacity-80'
-                  : 'border-slate-200 hover:border-indigo-200'
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4.5 transition hover:bg-slate-50/70 ${
+                task.status === 'Completed' ? 'bg-slate-50/40 opacity-75' : ''
               }`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3.5">
                 <button
                   onClick={() => handleToggleTask(task)}
                   className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition ${
@@ -365,7 +399,6 @@ export const ProjectDetails = () => {
                       ? 'border-emerald-500 bg-emerald-500 text-white'
                       : 'border-slate-300 hover:border-emerald-500 text-transparent'
                   }`}
-                  title={task.status === 'Completed' ? 'Mark uncompleted' : 'Mark completed'}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                 </button>
@@ -387,30 +420,35 @@ export const ProjectDetails = () => {
                     <span className="flex items-center gap-1 text-[11px] text-slate-400">
                       <Clock className="h-3 w-3" /> Due {task.dueDate}
                     </span>
+                    <span className="inline-flex items-center gap-1 pl-1 text-[11px] text-slate-400">
+                      • Assigned:
+                      <AssigneeAvatar user={task.assignedTo} fallback="Unassigned" />
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                <button
-                  onClick={() => {
-                    setEditingTask(task);
-                    setIsTaskModalOpen(true);
-                  }}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                  title="Edit task"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setDeletingTask(task)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
-                  title="Delete task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              {canCreateTask && (
+                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                  <button
+                    onClick={() => {
+                      setEditingTask(task);
+                      setIsTaskModalOpen(true);
+                    }}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                    title="Edit task"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingTask(task)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                    title="Delete task"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -454,4 +492,3 @@ export const ProjectDetails = () => {
     </div>
   );
 };
-

@@ -1,12 +1,17 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, CheckSquare, X, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { LayoutDashboard, FolderKanban, CheckSquare, Users, X, ShieldAlert } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.name === 'ADMIN';
+
   const links = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/projects', label: 'Projects', icon: FolderKanban },
     { to: '/tasks', label: 'Tasks', icon: CheckSquare },
+    ...(isAdmin ? [{ to: '/team', label: 'Team & Roles', icon: Users }] : []),
   ];
 
   return (
@@ -68,10 +73,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
           <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5">
             <div className="flex items-center gap-2 text-indigo-800">
               <ShieldAlert className="h-4 w-4 shrink-0 text-indigo-600" />
-              <span className="text-xs font-semibold">Project Spec Ready</span>
+              <span className="text-xs font-semibold">RBAC & Scoped Mode</span>
             </div>
             <p className="mt-1 text-[11px] text-slate-600 leading-relaxed">
-              Synced with REST API endpoints. Changes update live across the dashboard and lists.
+              Assignments and visibility are strictly scoped. Members only see tasks assigned to them.
             </p>
           </div>
         </div>
@@ -79,4 +84,3 @@ export const Sidebar = ({ isOpen, onClose }) => {
     </>
   );
 };
-

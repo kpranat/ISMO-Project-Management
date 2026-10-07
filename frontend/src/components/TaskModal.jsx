@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { getErrorMessage } from '../services/api.js';
+import { X, User } from 'lucide-react';
+import { getErrorMessage, userService } from '../services/api.js';
 
 export const TaskModal = ({
   isOpen,
@@ -16,8 +16,16 @@ export const TaskModal = ({
   const [priority, setPriority] = useState('Medium');
   const [status, setStatus] = useState('Pending');
   const [dueDate, setDueDate] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
+  const [users, setUsers] = useState([]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      userService.getUsers().then(setUsers).catch(console.error);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -27,12 +35,14 @@ export const TaskModal = ({
       setPriority(initialData.priority);
       setStatus(initialData.status);
       setDueDate(initialData.dueDate ? initialData.dueDate.substring(0, 10) : '');
+      setAssignedToId(initialData.assignedToId || '');
     } else {
       setName('');
       setDescription('');
       setProjectId(defaultProjectId || (projects.length > 0 ? projects[0].id : ''));
       setPriority('Medium');
       setStatus('Pending');
+      setAssignedToId('');
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
       setDueDate(nextWeek.toISOString().split('T')[0]);
@@ -67,6 +77,7 @@ export const TaskModal = ({
         priority,
         status,
         dueDate,
+        assignedToId: assignedToId || null,
       });
       onClose();
     } catch (err) {
@@ -92,20 +103,20 @@ export const TaskModal = ({
           </h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {errors.form && (
-          <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
             {errors.form}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Associated Project */}
+          {/* Project Selection */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
               Project *
@@ -113,7 +124,8 @@ export const TaskModal = ({
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className={`mt-1.5 w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2 ${
+              disabled={!!defaultProjectId}
+              className={`mt-1.5 w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2 disabled:bg-slate-50 ${
                 errors.projectId
                   ? 'border-rose-300 focus:ring-rose-200'
                   : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-100'
@@ -148,6 +160,30 @@ export const TaskModal = ({
               }`}
             />
             {errors.name && <p className="mt-1 text-xs text-rose-600">{errors.name}</p>}
+          </div>
+
+          {/* Assign To User */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+              Assign To Team Member
+            </label>
+            <div className="relative mt-1.5">
+              <select
+                value={assignedToId}
+                onChange={(e) => setAssignedToId(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="">Unassigned</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} ({u.role?.name || 'MEMBER'}) - {u.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Only the assigned user will see and be able to work on this task.
+            </p>
           </div>
 
           {/* Description */}
@@ -213,7 +249,7 @@ export const TaskModal = ({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className={`mt-1.5 w-full rounded-xl border px-3.5 py-2 text-sm transition outline-none focus:ring-2 ${
+              className={`mt-1.5 w-full rounded-xl border px-3.5 py-2 text-sm outline-none transition focus:ring-2 ${
                 errors.dueDate
                   ? 'border-rose-300 focus:ring-rose-200'
                   : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-100'
@@ -222,7 +258,7 @@ export const TaskModal = ({
             {errors.dueDate && <p className="mt-1 text-xs text-rose-600">{errors.dueDate}</p>}
           </div>
 
-          {/* Actions */}
+          {/* Buttons */}
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"
@@ -245,4 +281,3 @@ export const TaskModal = ({
     </div>
   );
 };
-

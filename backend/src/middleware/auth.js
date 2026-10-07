@@ -18,7 +18,19 @@ export const authenticate = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, name: true, email: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        roleId: true,
+        role: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -34,4 +46,3 @@ export const authenticate = async (req, res, next) => {
     return res.status(401).json({ message: 'Invalid authentication token.' });
   }
 };
-

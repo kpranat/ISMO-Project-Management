@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { taskService, projectService } from '../services/api.js';
-import { StatusBadge, PriorityBadge } from '../components/Badges.jsx';
+import { StatusBadge, PriorityBadge, AssigneeAvatar } from '../components/Badges.jsx';
 import { TaskModal } from '../components/TaskModal.jsx';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import {
   CheckSquare,
   Plus,
@@ -20,6 +21,9 @@ import {
 import { getErrorMessage } from '../services/api.js';
 
 export const Tasks = () => {
+  const { user } = useAuth();
+  const canCreateOrManage = ['ADMIN', 'PROJECT_LEADER'].includes(user?.role?.name);
+
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,16 +89,26 @@ export const Tasks = () => {
   };
 
   const handleToggleTask = async (task) => {
-    const nextStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
-    await taskService.updateTask(task.id, { status: nextStatus });
-    await loadData();
+    try {
+      const nextStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
+      await taskService.updateTask(task.id, { status: nextStatus });
+      await loadData();
+    } catch (err) {
+      console.error('Failed to update task status:', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   const handleDelete = async () => {
     if (!deletingTask) return;
-    await taskService.deleteTask(deletingTask.id);
-    setDeletingTask(null);
-    await loadData();
+    try {
+      await taskService.deleteTask(deletingTask.id);
+      setDeletingTask(null);
+      await loadData();
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      setError(getErrorMessage(err));
+    }
   };
 
   if (loading) {
@@ -114,20 +128,24 @@ export const Tasks = () => {
             Tasks
           </h1>
           <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-            Track individual work items, prioritize execution, and mark deliverables complete.
+            {canCreateOrManage
+              ? 'Create, assign, and track work items across active projects.'
+              : 'Tasks assigned to you. Click the checkbox to mark tasks complete.'}
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingTask(null);
-            setIsModalOpen(true);
-          }}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Task</span>
-        </button>
+        {canCreateOrManage && (
+          <button
+            onClick={() => {
+              setEditingTask(null);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 active:scale-95 transition"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Task</span>
+          </button>
+        )}
       </div>
 
       {error && (
@@ -146,82 +164,74 @@ export const Tasks = () => {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs lg:flex-row lg:items-center lg:justify-between">
-        {/* Search input */}
-        <div className="relative flex-1">
+      {/* Search & Filters */}
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tasks by name..."
+            placeholder="Search tasks..."
             className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-xs sm:text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           />
         </div>
 
-        {/* Filter controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Filter by Project */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-slate-400 font-medium hidden sm:inline">Project:</span>
-            <select
-              value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="All">All Projects</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <select
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs sm:text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="All">All Projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {/* Filter by Status */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-slate-400 font-medium hidden sm:inline">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
+        <div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs sm:text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
 
-          {/* Filter by Priority */}
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-slate-400 font-medium hidden sm:inline">Priority:</span>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-indigo-500"
-            >
-              <option value="All">All Priorities</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
+        <div>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs sm:text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          >
+            <option value="All">All Priorities</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
         </div>
       </div>
 
-      {/* Task List Table/Cards */}
+      {/* Task List */}
       {filteredTasks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <CheckSquare className="mx-auto h-10 w-10 text-slate-300" />
-          <h3 className="mt-2 text-sm font-semibold text-slate-800">No tasks found</h3>
+          <CheckSquare className="mx-auto h-12 w-12 text-slate-300" />
+          <h3 className="mt-3 text-base font-medium text-slate-900">No tasks found</h3>
           <p className="mt-1 text-xs text-slate-500">
             {searchQuery || statusFilter !== 'All' || priorityFilter !== 'All' || projectFilter !== 'All'
-              ? 'Try adjusting your search criteria or filters.'
-              : 'Add your first task to start tracking work.'}
+              ? 'Try clearing your filters or changing search keywords.'
+              : canCreateOrManage
+              ? 'Get started by creating your first task.'
+              : 'You do not have any tasks assigned currently.'}
           </p>
-          {!searchQuery && statusFilter === 'All' && priorityFilter === 'All' && (
+          {canCreateOrManage && !searchQuery && statusFilter === 'All' && (
             <button
               onClick={() => {
                 setEditingTask(null);
@@ -229,12 +239,12 @@ export const Tasks = () => {
               }}
               className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white"
             >
-              <Plus className="h-4 w-4" /> Add Task
+              <Plus className="h-4 w-4" /> Create Task
             </button>
           )}
         </div>
       ) : (
-        <div className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+        <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
           {filteredTasks.map((task) => (
             <div
               key={task.id}
@@ -285,30 +295,37 @@ export const Tasks = () => {
                     <span className="flex items-center gap-1 text-[11px] text-slate-400">
                       <Clock className="h-3 w-3" /> Due {task.dueDate}
                     </span>
+
+                    <span className="inline-flex items-center gap-1 pl-1 text-[11px] text-slate-400">
+                      • Assigned:
+                      <AssigneeAvatar user={task.assignedTo} fallback="Unassigned" />
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                <button
-                  onClick={() => {
-                    setEditingTask(task);
-                    setIsModalOpen(true);
-                  }}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                  title="Edit task"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setDeletingTask(task)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
-                  title="Delete task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              {canCreateOrManage && (
+                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                  <button
+                    onClick={() => {
+                      setEditingTask(task);
+                      setIsModalOpen(true);
+                    }}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                    title="Edit task"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingTask(task)}
+                    className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                    title="Delete task"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -336,4 +353,3 @@ export const Tasks = () => {
     </div>
   );
 };
-
