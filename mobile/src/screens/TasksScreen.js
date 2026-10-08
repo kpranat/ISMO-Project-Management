@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { taskService, getErrorMessage } from '../services/api.js';
 import { StatusBadge, PriorityBadge, AssigneeAvatar } from '../components/Badges.js';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const TasksScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -40,9 +41,11 @@ export const TasksScreen = ({ navigation }) => {
     }
   }, []);
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [loadTasks])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

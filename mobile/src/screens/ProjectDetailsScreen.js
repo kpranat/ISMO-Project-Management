@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { projectService, taskService, getErrorMessage } from '../services/api.js';
 import { StatusBadge, PriorityBadge, AssigneeAvatar } from '../components/Badges.js';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const ProjectDetailsScreen = ({ route, navigation }) => {
   const { id } = route.params;
@@ -42,9 +43,11 @@ export const ProjectDetailsScreen = ({ route, navigation }) => {
     }
   }, [id]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

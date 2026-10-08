@@ -13,6 +13,7 @@ import { dashboardService, taskService, updateService, getErrorMessage } from '.
 import { StatCard } from '../components/StatCard.js';
 import { RoleBadge, StatusBadge, PriorityBadge } from '../components/Badges.js';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const DashboardScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -49,9 +50,11 @@ export const DashboardScreen = ({ navigation }) => {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
