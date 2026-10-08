@@ -24,11 +24,15 @@ export const ProjectDetailsScreen = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
+  const isProjectLead =
+    project?.userId === user?.id || project?.assignedToId === user?.id;
   const canManage =
     user?.role?.name === 'ADMIN' ||
-    (user?.role?.name === 'PROJECT_LEADER' && project?.userId === user?.id);
+    (user?.role?.name === 'PROJECT_LEADER' && isProjectLead);
 
-  const canCreateTask = ['ADMIN', 'PROJECT_LEADER'].includes(user?.role?.name);
+  const canCreateTask =
+    user?.role?.name === 'ADMIN' ||
+    (user?.role?.name === 'PROJECT_LEADER' && isProjectLead);
 
   const loadData = useCallback(async () => {
     try {

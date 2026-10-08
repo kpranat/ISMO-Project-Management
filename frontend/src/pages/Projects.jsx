@@ -191,8 +191,11 @@ export const Projects = () => {
             const total = project.taskCount || 0;
             const completed = project.completedTaskCount || 0;
             const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const isProjectLead =
+              project.userId === user?.id || project.assignedToId === user?.id;
             const canEditThis =
-              user?.role?.name === 'ADMIN' || (user?.role?.name === 'PROJECT_LEADER' && project.userId === user?.id);
+              user?.role?.name === 'ADMIN' ||
+              (user?.role?.name === 'PROJECT_LEADER' && isProjectLead);
 
             return (
               <div

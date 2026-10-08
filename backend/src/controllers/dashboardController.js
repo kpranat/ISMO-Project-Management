@@ -16,7 +16,7 @@ export const getDashboardStats = async (req, res, next) => {
         OR: [{ userId }, { assignedToId: userId }],
       };
       taskWhere = {
-        OR: [{ project: { userId } }, { assignedToId: userId }],
+        OR: [{ project: { userId } }, { project: { assignedToId: userId } }, { assignedToId: userId }],
       };
     } else {
       // MEMBER: strictly assigned to them
