@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
-// Default to the computer's current local Wi-Fi IP address
-export const DEFAULT_API_URL = 'http://10.3.115.194:5000/api';
+// Live production backend hosted on Vercel
+export const DEFAULT_API_URL = 'https://ismo-backend.vercel.app/api';
 
 const SERVER_URL_KEY = 'ismo_custom_server_url';
 
@@ -11,7 +11,8 @@ export const configService = {
   async getApiUrl() {
     try {
       const stored = await SecureStore.getItemAsync(SERVER_URL_KEY);
-      if (stored && stored.trim().length > 0) {
+      // If stored value is an old local development IP, prefer the live Vercel URL
+      if (stored && stored.trim().length > 0 && !stored.includes('10.3.115')) {
         activeApiUrl = stored.trim();
       } else {
         activeApiUrl = DEFAULT_API_URL;
@@ -27,7 +28,7 @@ export const configService = {
   },
 
   async setApiUrl(newUrl) {
-    if (!newUrl || !newUrl.trim()) {
+    if (!newUrl || !newUrl.trim() || newUrl === DEFAULT_API_URL) {
       activeApiUrl = DEFAULT_API_URL;
       await SecureStore.deleteItemAsync(SERVER_URL_KEY);
       return activeApiUrl;
@@ -35,7 +36,7 @@ export const configService = {
 
     let formatted = newUrl.trim();
     if (!formatted.startsWith('http://') && !formatted.startsWith('https://')) {
-      formatted = 'http://' + formatted;
+      formatted = 'https://' + formatted;
     }
     if (!formatted.endsWith('/api')) {
       formatted = formatted.replace(/\/+$/, '') + '/api';
@@ -46,4 +47,3 @@ export const configService = {
     return activeApiUrl;
   },
 };
-

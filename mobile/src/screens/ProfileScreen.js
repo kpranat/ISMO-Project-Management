@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,10 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext.js';
 import { RoleBadge } from '../components/Badges.js';
-import { ServerModal } from '../components/ServerModal.js';
 import { Ionicons } from '@expo/vector-icons';
 
 export const ProfileScreen = () => {
   const { user, logout, serverUrl } = useAuth();
-  const [serverModalVisible, setServerModalVisible] = useState(false);
 
   const roleName = user?.role?.name || 'MEMBER';
 
@@ -101,28 +99,22 @@ export const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* Server & Network Connectivity Card */}
+      {/* Server & Cloud Backend Status Card */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Ionicons name="server-outline" size={20} color="#0284c7" />
-          <Text style={styles.sectionTitle}>Backend Connection</Text>
+          <Ionicons name="cloud-done-outline" size={20} color="#059669" />
+          <Text style={styles.sectionTitle}>Cloud Backend</Text>
         </View>
-        <Text style={styles.serverDesc}>
-          Active API endpoint used for all synchronizations:
-        </Text>
+        <View style={styles.statusRow}>
+          <View style={styles.statusDot} />
+          <Text style={styles.statusText}>Connected to Vercel Production API</Text>
+        </View>
         <View style={styles.serverUrlBox}>
           <Ionicons name="link-outline" size={16} color="#64748b" />
           <Text style={styles.serverUrlText} numberOfLines={1}>
             {serverUrl}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.serverBtn}
-          onPress={() => setServerModalVisible(true)}
-        >
-          <Ionicons name="settings-outline" size={16} color="#0284c7" />
-          <Text style={styles.serverBtnText}>Change Server IP / Test Connection</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Security & Token Storage */}
@@ -143,12 +135,6 @@ export const ProfileScreen = () => {
       </TouchableOpacity>
 
       <Text style={styles.versionText}>ISMO Mobile v1.0.0 • Pure React Native</Text>
-
-      {/* In-app Server Configuration Modal */}
-      <ServerModal
-        visible={serverModalVisible}
-        onClose={() => setServerModalVisible(false)}
-      />
     </ScrollView>
   );
 };
@@ -238,10 +224,22 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-  serverDesc: {
-    fontSize: 13,
-    color: '#64748b',
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981',
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#047857',
   },
   serverUrlBox: {
     flexDirection: 'row',
@@ -253,29 +251,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    marginBottom: 12,
   },
   serverUrlText: {
     fontSize: 13,
     color: '#334155',
     fontFamily: 'monospace',
     flex: 1,
-  },
-  serverBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#f0f9ff',
-    borderRadius: 8,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#bae6fd',
-  },
-  serverBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0284c7',
   },
   securityText: {
     fontSize: 13,
@@ -307,4 +288,3 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 });
-
