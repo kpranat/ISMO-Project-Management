@@ -303,32 +303,6 @@ A standalone Android APK has been compiled via **EAS Build** and requires zero i
 - **Input Validation**: Backend Zod schemas validate types, required fields, date formats, and enums before requests reach controllers.
 
 ---
-
-## 🎬 5-Minute Video Recording Guide (Submission Deliverable #7)
-
-To record your 5-minute video demonstration:
-
-1. **Setup (0:00 - 0:30)**:
-   - Place Web App (`https://ismo-project-management.vercel.app`) on the left half of your screen.
-   - Place Mobile App (phone screen mirror or emulator) on the right half.
-2. **Authentication (0:30 - 1:15)**:
-   - Sign in as Project Leader (`leader@ismo.dev` / `password123`) on both platforms.
-   - Note the matching credentials and role badges.
-3. **Web-to-Mobile Real-Time Sync (1:15 - 2:30)**:
-   - On Web: Click **"Create Task"** -> create *"Production Release Verification"*, assign to `Pranat (intern@ismo.dev)`.
-   - On Mobile: Tap the **Tasks** tab (or pull-to-refresh) -> show the task appearing instantly!
-4. **Mobile-to-Web Real-Time Sync (2:30 - 3:45)**:
-   - On Mobile: Tap the checkbox to mark the task **Completed**.
-   - On Web: Refresh the dashboard/tasks page -> show the task completed and progress bar updated!
-5. **Role-Based Access Control (3:45 - 4:45)**:
-   - Sign in as Admin (`admin@ismo.dev`) -> show the **Team & Roles** panel.
-   - Change a user's role from Member to Project Leader.
-   - Sign in as Member (`intern@ismo.dev`) -> show that "Create Project" and "Create Task" buttons are hidden and only assigned items are visible.
-6. **Wrap-up (4:45 - 5:00)**:
-   - Highlight hardware Keystore storage, cloud Vercel deployments, and conclusion.
-
----
-
 ## 👥 Contributors & Submission Details
 
 - **Candidate**: Pranat
