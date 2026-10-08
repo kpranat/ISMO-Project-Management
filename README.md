@@ -276,7 +276,11 @@ npx expo start
 
 ## 📱 Mobile App: APK & Distribution
 
-### Standalone Android APK (`.apk`)
+### Standalone Android APK (`.apk`) 
+
+downlaod url - https://expo.dev/accounts/boicodes/projects/ismo-project-management/builds/51d0db95-8dc1-4e24-aeb8-5460569a6e19
+
+
 A standalone Android APK has been compiled via **EAS Build** and requires zero installation of Node.js or Expo Go on the testing device.
 
 1. **Direct Download**: Built and hosted on Expo Application Services (EAS Build).
