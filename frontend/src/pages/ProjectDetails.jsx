@@ -44,11 +44,15 @@ export const ProjectDetails = () => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
 
+  const isProjectLead =
+    project?.userId === user?.id || project?.assignedToId === user?.id;
   const canManageProject =
     user?.role?.name === 'ADMIN' ||
-    (user?.role?.name === 'PROJECT_LEADER' && project?.userId === user?.id);
+    (user?.role?.name === 'PROJECT_LEADER' && isProjectLead);
 
-  const canCreateTask = ['ADMIN', 'PROJECT_LEADER'].includes(user?.role?.name);
+  const canCreateTask =
+    user?.role?.name === 'ADMIN' ||
+    (user?.role?.name === 'PROJECT_LEADER' && isProjectLead);
 
   const loadData = useCallback(async () => {
     if (!id) return;

@@ -188,7 +188,13 @@ export const updateProject = async (req, res, next) => {
     const roleName = req.user.role?.name;
 
     const existing = await prisma.project.findFirst({
-      where: roleName === 'ADMIN' ? { id } : { id, userId: req.user.id },
+      where:
+        roleName === 'ADMIN'
+          ? { id }
+          : {
+              id,
+              OR: [{ userId: req.user.id }, { assignedToId: req.user.id }],
+            },
       include: { assignedTo: true },
     });
 
@@ -246,7 +252,13 @@ export const deleteProject = async (req, res, next) => {
     const roleName = req.user.role?.name;
 
     const existing = await prisma.project.findFirst({
-      where: roleName === 'ADMIN' ? { id } : { id, userId: req.user.id },
+      where:
+        roleName === 'ADMIN'
+          ? { id }
+          : {
+              id,
+              OR: [{ userId: req.user.id }, { assignedToId: req.user.id }],
+            },
     });
 
     if (!existing) {

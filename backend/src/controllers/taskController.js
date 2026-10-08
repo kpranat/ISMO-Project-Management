@@ -30,6 +30,7 @@ export const getTasks = async (req, res, next) => {
       roleScope = {
         OR: [
           { project: { userId: userId } },
+          { project: { assignedToId: userId } },
           { assignedToId: userId },
         ],
       };
@@ -105,6 +106,7 @@ export const getTaskById = async (req, res, next) => {
         id,
         OR: [
           { project: { userId: userId } },
+          { project: { assignedToId: userId } },
           { assignedToId: userId },
         ],
       };
@@ -156,9 +158,15 @@ export const createTask = async (req, res, next) => {
     const { projectId, name, description, priority, status, dueDate, assignedToId } = req.body;
     const roleName = req.user.role?.name;
 
-    // Verify project exists and user is authorized (Admin or Leader owning the project)
+    // Verify project exists and user is authorized (Admin or Leader owning/assigned to the project)
     const project = await prisma.project.findFirst({
-      where: roleName === 'ADMIN' ? { id: projectId } : { id: projectId, userId: req.user.id },
+      where:
+        roleName === 'ADMIN'
+          ? { id: projectId }
+          : {
+              id: projectId,
+              OR: [{ userId: req.user.id }, { assignedToId: req.user.id }],
+            },
     });
 
     if (!project) {
@@ -222,7 +230,7 @@ export const updateTask = async (req, res, next) => {
     const existing = await prisma.task.findUnique({
       where: { id },
       include: {
-        project: { select: { id: true, name: true, userId: true } },
+        project: { select: { id: true, name: true, userId: true, assignedToId: true } },
         assignedTo: { select: { id: true, name: true } },
       },
     });
@@ -247,10 +255,12 @@ export const updateTask = async (req, res, next) => {
         });
       }
     } else if (roleName === 'PROJECT_LEADER') {
-      // Project Leader must either own the parent project or be the task assignee
-      const isProjectOwner = existing.project?.userId === userId;
+      // Project Leader must either be project creator, project assignee, or task assignee
+      const isProjectLead =
+        existing.project?.userId === userId ||
+        existing.project?.assignedToId === userId;
       const isAssignee = existing.assignedToId === userId;
-      if (!isProjectOwner && !isAssignee) {
+      if (!isProjectLead && !isAssignee) {
         return res.status(403).json({ message: 'Forbidden. You can only edit tasks in projects you lead.' });
       }
     }
@@ -258,7 +268,13 @@ export const updateTask = async (req, res, next) => {
     // If changing project, ensure target project exists and is authorized
     if (req.body.projectId && req.body.projectId !== existing.projectId) {
       const newProject = await prisma.project.findFirst({
-        where: roleName === 'ADMIN' ? { id: req.body.projectId } : { id: req.body.projectId, userId: req.user.id },
+        where:
+          roleName === 'ADMIN'
+            ? { id: req.body.projectId }
+            : {
+                id: req.body.projectId,
+                OR: [{ userId: req.user.id }, { assignedToId: req.user.id }],
+              },
       });
       if (!newProject) {
         return res.status(404).json({ message: 'New target project not found or unauthorized.' });
@@ -329,7 +345,10 @@ export const deleteTask = async (req, res, next) => {
       return res.status(404).json({ message: 'Task not found.' });
     }
 
-    if (roleName === 'PROJECT_LEADER' && existing.project?.userId !== userId) {
+    const isProjectLead =
+      existing.project?.userId === userId ||
+      existing.project?.assignedToId === userId;
+    if (roleName === 'PROJECT_LEADER' && !isProjectLead) {
       return res.status(403).json({ message: 'Forbidden. You can only delete tasks in projects you lead.' });
     }
 
