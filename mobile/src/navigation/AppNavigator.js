@@ -16,6 +16,7 @@ import { ProjectDetailsScreen } from '../screens/ProjectDetailsScreen.js';
 import { ProjectFormScreen } from '../screens/ProjectFormScreen.js';
 import { TasksScreen } from '../screens/TasksScreen.js';
 import { TaskFormScreen } from '../screens/TaskFormScreen.js';
+import { TeamRolesScreen } from '../screens/TeamRolesScreen.js';
 import { ProfileScreen } from '../screens/ProfileScreen.js';
 
 const Stack = createNativeStackNavigator();
@@ -23,6 +24,9 @@ const Tab = createBottomTabNavigator();
 
 // Bottom Tab Navigator for logged in state
 const MainTabs = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.name === 'ADMIN';
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -83,6 +87,19 @@ const MainTabs = () => {
           ),
         }}
       />
+      {isAdmin && (
+        <Tab.Screen
+          name="Team"
+          component={TeamRolesScreen}
+          options={{
+            title: 'Team & Roles',
+            tabBarLabel: 'Team',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'people' : 'people-outline'} size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

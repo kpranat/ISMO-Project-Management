@@ -299,6 +299,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     marginBottom: 8,
+    gap: 8,
   },
   section: {
     marginTop: 16,

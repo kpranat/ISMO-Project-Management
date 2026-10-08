@@ -186,5 +186,15 @@ export const userService = {
     const res = await apiClient.get('/users');
     return res.data;
   },
+
+  async getRoles() {
+    const res = await apiClient.get('/users/roles');
+    return res.data;
+  },
+
+  async updateUserRole(userId, roleName) {
+    const res = await apiClient.patch(`/users/${userId}/role`, { roleName });
+    return res.data;
+  },
 };
 
